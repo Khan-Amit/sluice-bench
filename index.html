@@ -91,7 +91,7 @@
             const resp = await fetch(url);
             const data = await resp.json();
             const temp = data.current_weather.temperature;
-            const value = Math.floor(temp * 100000); // scale to match isRipe range
+            const value = Math.floor(temp * 100000);
             total++;
             const ripe = isRipe(value);
             if (ripe) ripeCount++;
