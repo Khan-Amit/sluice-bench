@@ -1,8 +1,13 @@
 CC = gcc
 CFLAGS = -Wall -O2
+TARGET = sluice_bench
 
-sluice_bench: sluice_bench.c
-	$(CC) $(CFLAGS) -o sluice_bench sluice_bench.c
+all: $(TARGET)
+
+$(TARGET): sluice_bench.c
+	$(CC) $(CFLAGS) -o $(TARGET) sluice_bench.c
 
 clean:
-	rm -f sluice_bench
+	rm -f $(TARGET)
+
+.PHONY: all clean
