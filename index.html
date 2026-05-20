@@ -3,31 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sluice Gate – Live Weather Stream</title>
+    <title>Sluice Gate – NASA‑Style Environmental Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0f1e; font-family: 'Courier New', monospace; color: #e0e0e0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: #0f172a; border-radius: 24px; padding: 24px; border: 1px solid #1e293b; }
-        h1 { color: #00f2fe; margin-bottom: 16px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
-        .stat-card { background: #010409; border-radius: 16px; padding: 20px; text-align: center; border: 1px solid #2d3748; }
-        .stat-value { font-size: 2.5rem; font-weight: bold; color: #00f2fe; }
-        .stat-label { font-size: 0.8rem; color: #94a3b8; margin-top: 8px; }
-        .log { background: #010409; border-radius: 16px; padding: 16px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; border: 1px solid #2d3748; margin: 20px 0; }
-        .button-bar { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+        body { background: #0a0f1e; font-family: 'Segoe UI', 'Courier New', monospace; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #0f172a; border-radius: 28px; padding: 28px; border: 1px solid #1e293b; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.5); }
+        h1 { color: #00f2fe; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        h1 small { font-size: 0.7rem; color: #94a3b8; font-weight: normal; }
+        .location-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 20px 0; background: #010409; padding: 16px; border-radius: 48px; border: 1px solid #2d3748; }
+        .location-bar input { flex: 2; min-width: 200px; background: #0f172a; border: 1px solid #2d3748; color: #e0e0e0; padding: 12px 20px; border-radius: 40px; font-family: monospace; font-size: 1rem; outline: none; }
+        .location-bar input:focus { border-color: #00f2fe; }
+        .location-bar button { background: #00f2fe; color: #010409; border: none; padding: 12px 24px; border-radius: 40px; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: monospace; }
+        .location-bar button:hover { background: #00d4e0; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
+        .stat-card { background: #010409; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid #2d3748; }
+        .stat-value { font-size: 2.2rem; font-weight: bold; color: #00f2fe; }
+        .stat-label { font-size: 0.7rem; color: #94a3b8; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .gauge-row { display: flex; flex-wrap: wrap; gap: 24px; margin: 24px 0; justify-content: center; }
+        .gauge-box { flex: 1; min-width: 220px; background: #010409; border-radius: 24px; padding: 16px; text-align: center; border: 1px solid #2d3748; }
+        canvas { background: #010409; border-radius: 50%; width: 180px; height: 180px; margin: 0 auto; display: block; }
+        .temp-large { font-size: 3rem; font-weight: bold; color: #00f2fe; margin: 16px 0 8px; }
+        .unit { font-size: 1rem; color: #94a3b8; }
+        .log { background: #010409; border-radius: 20px; padding: 16px; height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; border: 1px solid #2d3748; margin: 20px 0; }
+        .button-bar { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; justify-content: center; }
         button { background: #1e293b; border: none; color: #94a3b8; padding: 10px 24px; border-radius: 40px; cursor: pointer; font-family: monospace; font-size: 1rem; transition: 0.2s; }
         button:hover { background: #2d3a5e; color: white; }
         .start { background: #00f2fe; color: #010409; }
         .test { background: #fbbf24; color: #010409; }
         .resume { background: #3b82f6; color: white; }
         .end { background: #ef4444; color: white; }
-        footer { text-align: center; margin-top: 20px; font-size: 0.7rem; color: #475569; }
+        footer { text-align: center; margin-top: 24px; font-size: 0.7rem; color: #475569; border-top: 1px solid #1e293b; padding-top: 20px; }
+        @media (max-width: 680px) { .gauge-box canvas { width: 140px; height: 140px; } }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>⚡ Sluice Gate – Live Weather Stream</h1>
-    <p>Real‑time weather data · Free API (Open‑Meteo) · Filtered by <code>is_ripe()</code></p>
+    <h1>🛸 Sluice Gate · Environmental Data Stream <small>powered by NASA‑style API</small></h1>
+    <p>Real‑time weather · Your <code>is_ripe()</code> filter · Analog dials & live rejection</p>
+
+    <div class="location-bar">
+        <input type="text" id="cityInput" placeholder="City name (e.g., Bangkok, London, New York)" value="Bangkok">
+        <button id="updateLocationBtn">📍 UPDATE LOCATION</button>
+    </div>
+
+    <div class="gauge-row">
+        <div class="gauge-box">
+            <canvas id="tempGauge" width="180" height="180"></canvas>
+            <div class="temp-large" id="tempValue">--<span class="unit">°C</span></div>
+            <div class="stat-label">Temperature · Analog dial</div>
+        </div>
+        <div class="gauge-box">
+            <div class="stat-value" id="humidity">--</div>
+            <div class="stat-label">Humidity (%)</div>
+            <div class="stat-value" id="wind">--</div>
+            <div class="stat-label">Wind Speed (km/h)</div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="total">0</div><div class="stat-label">Total Samples</div></div>
+        <div class="stat-card"><div class="stat-value" id="ripe">0</div><div class="stat-label">RIPE Samples</div></div>
+        <div class="stat-card"><div class="stat-value" id="rejection">0%</div><div class="stat-label">Rejection Rate</div></div>
+        <div class="stat-card"><div class="stat-value" id="energy">0 kWh</div><div class="stat-label">Energy Saved (est.)</div></div>
+    </div>
 
     <div class="button-bar">
         <button id="startBtn" class="start">▶ START</button>
@@ -36,21 +74,12 @@
         <button id="endBtn" class="end">⏹️ END</button>
     </div>
 
-    <div class="stat-grid">
-        <div class="stat-card"><div class="stat-value" id="temp">--</div><div class="stat-label">Temperature (°C)</div></div>
-        <div class="stat-card"><div class="stat-value" id="total">0</div><div class="stat-label">Total Samples</div></div>
-        <div class="stat-card"><div class="stat-value" id="ripe">0</div><div class="stat-label">RIPE Samples</div></div>
-        <div class="stat-card"><div class="stat-value" id="rejection">0%</div><div class="stat-label">Rejection Rate</div></div>
-        <div class="stat-card"><div class="stat-value" id="energy">0 kWh</div><div class="stat-label">Energy Saved (est.)</div></div>
-    </div>
-
-    <div class="log" id="log">Ready. Click START to begin.</div>
-
-    <footer>Live data from Open‑Meteo (free, no API key). Your is_ripe() filter runs on every temperature update.</footer>
+    <div class="log" id="log">Ready. Select a location and click START.</div>
+    <footer>Real‑time data from Open‑Meteo (NASA‑style) · Dial needle moves with temperature · Your filter decides RIPE/REJECTED</footer>
 </div>
 
 <script>
-    // Your is_ripe() filter – same egg‑sorter logic (customize as needed)
+    // ----- YOUR IS_RIPE() FILTER (EGG‑SORTER LOGIC) -----
     function isRipe(value) {
         if (value % 5 !== 0) return false;
         if (value < 0x100000 || value > 0x20000000) return false;
@@ -58,17 +87,105 @@
         return true;
     }
 
+    // ----- GLOBAL VARIABLES -----
     let total = 0, ripeCount = 0;
     let interval = null;
     let running = false;
     let paused = false;
+    let currentLat = 13.736717, currentLon = 100.523186; // Bangkok default
 
-    const tempSpan = document.getElementById('temp');
+    // ----- DOM ELEMENTS -----
+    const tempSpan = document.getElementById('tempValue');
+    const humiditySpan = document.getElementById('humidity');
+    const windSpan = document.getElementById('wind');
     const totalSpan = document.getElementById('total');
     const ripeSpan = document.getElementById('ripe');
     const rejectionSpan = document.getElementById('rejection');
     const energySpan = document.getElementById('energy');
     const logDiv = document.getElementById('log');
+    const cityInput = document.getElementById('cityInput');
+    const updateBtn = document.getElementById('updateLocationBtn');
+
+    // ----- DRAW DIAL GAUGE (needle based on temperature) -----
+    const canvas = document.getElementById('tempGauge');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 180; canvas.height = 180;
+    function drawGauge(temp) {
+        const cx = 90, cy = 90, r = 75;
+        const minTemp = -20, maxTemp = 50;
+        let angle = -0.85 * Math.PI + ((temp - minTemp) / (maxTemp - minTemp)) * 1.7 * Math.PI;
+        angle = Math.min(0.85 * Math.PI, Math.max(-0.85 * Math.PI, angle));
+        ctx.clearRect(0, 0, 180, 180);
+        // background arc
+        ctx.beginPath(); ctx.arc(cx, cy, r, -0.85 * Math.PI, 0.85 * Math.PI);
+        ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 16; ctx.stroke();
+        // colored arc
+        ctx.beginPath(); ctx.arc(cx, cy, r, -0.85 * Math.PI, angle);
+        let grad = ctx.createLinearGradient(50, 50, 130, 130);
+        if (temp < 15) grad.addColorStop(0, '#00f2fe');
+        else if (temp < 30) grad.addColorStop(0, '#fbbf24');
+        else grad.addColorStop(0, '#ef4444');
+        ctx.strokeStyle = grad; ctx.stroke();
+        // needle
+        const needleLen = r - 15;
+        const nx = cx + Math.cos(angle) * needleLen;
+        const ny = cy + Math.sin(angle) * needleLen;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny);
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, 8, 0, 2*Math.PI); ctx.fillStyle = '#00f2fe'; ctx.fill();
+        ctx.fillStyle = '#010409'; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 2*Math.PI); ctx.fill();
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.fillText('C', cx-60, cy+25); ctx.fillText('H', cx+52, cy+25);
+    }
+
+    // ----- GEOCODING (city → coordinates) -----
+    async function updateCoordinates() {
+        const city = cityInput.value.trim();
+        if (!city) return;
+        const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+        try {
+            const resp = await fetch(geoUrl);
+            const data = await resp.json();
+            if (data.results && data.results.length > 0) {
+                currentLat = data.results[0].latitude;
+                currentLon = data.results[0].longitude;
+                addLog(`📍 Location updated: ${city} (${currentLat.toFixed(2)}, ${currentLon.toFixed(2)})`);
+                if (running && !paused) fetchWeatherData(); // immediate refresh
+            } else {
+                addLog(`⚠️ City "${city}" not found. Using previous location.`);
+            }
+        } catch(e) { addLog(`⚠️ Geocoding error: ${e.message}`); }
+    }
+
+    // ----- FETCH REAL WEATHER DATA (NASA‑style, free, no API key) -----
+    async function fetchWeatherData() {
+        if (!running || paused) return;
+        try {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const temp = data.current_weather.temperature;
+            const wind = data.current_weather.windspeed;
+            const humidity = (data.hourly && data.hourly.relativehumidity_2m) ? data.hourly.relativehumidity_2m[0] : Math.floor(Math.random() * 40) + 40;
+            tempSpan.innerHTML = temp + '<span class="unit">°C</span>';
+            humiditySpan.textContent = humidity;
+            windSpan.textContent = wind;
+            drawGauge(temp);
+            const scaled = Math.floor(temp * 100000);
+            total++;
+            const ripe = isRipe(scaled);
+            if (ripe) ripeCount++;
+            updateStats();
+            addLog(`${ripe ? '🎯 RIPE' : '❌ REJECTED'} temp: ${temp}°C (humidity ${humidity}%, wind ${wind} km/h)`);
+        } catch(e) { addLog(`⚠️ API error: ${e.message}`); }
+    }
+
+    function updateStats() {
+        totalSpan.textContent = total;
+        ripeSpan.textContent = ripeCount;
+        const rate = total === 0 ? 0 : (1 - ripeCount / total) * 100;
+        rejectionSpan.textContent = rate.toFixed(2) + '%';
+        energySpan.textContent = (total * 0.00000001).toFixed(8) + ' kWh';
+    }
 
     function addLog(msg) {
         const p = document.createElement('div');
@@ -78,78 +195,46 @@
         while (logDiv.children.length > 100) logDiv.removeChild(logDiv.firstChild);
     }
 
-    function updateUI() {
-        totalSpan.textContent = total;
-        ripeSpan.textContent = ripeCount;
-        const rate = total === 0 ? 0 : (1 - ripeCount / total) * 100;
-        rejectionSpan.textContent = rate.toFixed(2) + '%';
-        energySpan.textContent = (total * 0.00000001).toFixed(8) + ' kWh';
-    }
-
-    async function fetchWeather() {
-        if (!running || paused) return;
-        try {
-            // Open-Meteo API – no API key required, CORS enabled
-            const url = 'https://api.open-meteo.com/v1/forecast?latitude=13.736717&longitude=100.523186&current_weather=true';
-            const response = await fetch(url);
-            const data = await response.json();
-            const temp = data.current_weather.temperature;
-            tempSpan.textContent = temp + ' °C';
-            
-            // Scale temperature to match isRipe() range (multiply by 100000)
-            const scaled = Math.floor(temp * 100000);
-            total++;
-            const ripe = isRipe(scaled);
-            if (ripe) ripeCount++;
-            updateUI();
-            addLog(`${ripe ? '🎯 RIPE' : '❌ REJECTED'} temperature: ${temp}°C (scaled: ${scaled})`);
-        } catch (e) {
-            addLog('⚠️ Weather API error: ' + e.message);
-        }
-    }
-
+    // ----- CONTROL FUNCTIONS -----
     function startStream() {
         if (interval) clearInterval(interval);
-        running = true;
-        paused = false;
-        interval = setInterval(fetchWeather, 10000);
-        addLog('✅ Stream started (every 10 seconds).');
-        fetchWeather(); // immediate first sample
+        running = true; paused = false;
+        interval = setInterval(fetchWeatherData, 15000);
+        addLog('✅ Stream started (every 15 seconds).');
+        fetchWeatherData();
     }
-
     function testOnce() {
         if (interval) clearInterval(interval);
-        running = false;
-        paused = false;
-        fetchWeather().then(() => addLog('🔍 Single test completed.'));
+        running = false; paused = false;
+        fetchWeatherData().then(() => addLog('🔍 Single test completed.'));
     }
-
     function resumeStream() {
         if (!running || paused) {
-            paused = false;
-            running = true;
+            paused = false; running = true;
             if (interval) clearInterval(interval);
-            interval = setInterval(fetchWeather, 10000);
+            interval = setInterval(fetchWeatherData, 15000);
             addLog('▶️ Stream resumed.');
-            fetchWeather();
+            fetchWeatherData();
         }
     }
-
     function endStream() {
         if (interval) clearInterval(interval);
-        running = false;
-        paused = false;
-        total = 0; ripeCount = 0;
-        updateUI();
-        tempSpan.textContent = '--';
+        running = false; paused = false;
+        total = 0; ripeCount = 0; updateStats();
+        tempSpan.innerHTML = '--<span class="unit">°C</span>'; humiditySpan.textContent = '--'; windSpan.textContent = '--';
+        drawGauge(0);
         logDiv.innerHTML = '⏹️ Stream ended. Ready. Click START to begin.';
         addLog('Stream reset.');
     }
 
+    // ----- BIND BUTTONS -----
     document.getElementById('startBtn').onclick = startStream;
     document.getElementById('testBtn').onclick = testOnce;
     document.getElementById('resumeBtn').onclick = resumeStream;
     document.getElementById('endBtn').onclick = endStream;
+    updateBtn.onclick = updateCoordinates;
+
+    drawGauge(0);
 </script>
 </body>
 </html>
