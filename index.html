@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sluice Gate – Live Weather Stream</title>
+    <title>Sluice Gate – Live Data Stream (Simulated)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0f1e; font-family: 'Courier New', monospace; color: #e0e0e0; padding: 20px; }
@@ -26,8 +26,8 @@
 </head>
 <body>
 <div class="container">
-    <h1>⚡ Sluice Gate – Live Weather Stream</h1>
-    <p>Real‑time weather data · Filtered by <code>is_ripe()</code></p>
+    <h1>⚡ Sluice Gate – Live Data Stream</h1>
+    <p>Simulated live data · Filtered by <code>is_ripe()</code> · No external API needed</p>
 
     <div class="button-bar">
         <button id="startBtn" class="start">▶ START</button>
@@ -45,11 +45,11 @@
 
     <div class="log" id="log">Ready. Click START to begin.</div>
 
-    <footer>Live weather data from Open‑Meteo · Your is_ripe() filters each value in real time</footer>
+    <footer>Your is_ripe() filter runs on every generated value · Simulated stream, but real filter logic</footer>
 </div>
 
 <script>
-    // Your is_ripe() function – example rules (customize as needed)
+    // Your is_ripe() function – same logic as your egg‑sorter
     function isRipe(value) {
         if (value % 5 !== 0) return false;
         if (value < 0x100000 || value > 0x20000000) return false;
@@ -84,37 +84,38 @@
         energySpan.textContent = (total * 0.00000001).toFixed(8) + ' kWh';
     }
 
-    async function fetchWeather() {
+    function generateDataPoint() {
+        // Simulate a realistic value (like a temperature reading or a nonce)
+        const base = 0x100000 + Math.floor(Math.random() * 0x20000000);
+        const mod = Math.floor(Math.random() * 20);
+        const value = mod === 0 ? base + 0xC : base + mod;
+        return value;
+    }
+
+    function tick() {
         if (!running || paused) return;
-        try {
-            const url = 'https://api.open-meteo.com/v1/forecast?latitude=13.736717&longitude=100.523186&current_weather=true';
-            const resp = await fetch(url);
-            const data = await resp.json();
-            const temp = data.current_weather.temperature;
-            const value = Math.floor(temp * 100000);
-            total++;
-            const ripe = isRipe(value);
-            if (ripe) ripeCount++;
-            updateUI();
-            addLog(`${ripe ? '🎯 RIPE' : '❌ REJECTED'} weather value: ${value} (${temp}°C)`);
-        } catch(e) {
-            addLog('⚠️ Weather API error: ' + e.message);
-        }
+        const value = generateDataPoint();
+        total++;
+        const ripe = isRipe(value);
+        if (ripe) ripeCount++;
+        updateUI();
+        addLog(`${ripe ? '🎯 RIPE' : '❌ REJECTED'} data: ${value} (hex: ${value.toString(16)})`);
     }
 
     function startStream() {
         if (interval) clearInterval(interval);
         running = true;
         paused = false;
-        interval = setInterval(fetchWeather, 10000);
-        addLog('✅ Stream started (every 10 seconds).');
+        interval = setInterval(tick, 2000); // new data every 2 seconds
+        addLog('✅ Stream started (2 seconds interval).');
     }
 
     function testOnce() {
         if (interval) clearInterval(interval);
         running = false;
         paused = false;
-        fetchWeather().then(() => addLog('🔍 Single test completed.'));
+        tick();
+        addLog('🔍 Single test completed.');
     }
 
     function resumeStream() {
@@ -122,7 +123,7 @@
             paused = false;
             running = true;
             if (interval) clearInterval(interval);
-            interval = setInterval(fetchWeather, 10000);
+            interval = setInterval(tick, 2000);
             addLog('▶️ Stream resumed.');
         }
     }
